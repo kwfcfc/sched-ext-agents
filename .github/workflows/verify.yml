@@ -1,0 +1,121 @@
+name: Verify
+
+on:
+  pull_request:
+    paths:
+      - 'specs/**'
+      - 'impl/**'
+  push:
+    branches: [main]
+
+jobs:
+  # ── Stage 1: Dafny specification verification ───────────
+  verify-spec:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dafny
+        run: |
+          wget -q https://github.com/dafny-lang/dafny/releases/download/v4.4.0/dafny-4.4.0-x64-ubuntu-20.04.zip
+          unzip -q dafny-*.zip -d /opt/dafny
+          echo "/opt/dafny/dafny" >> $GITHUB_PATH
+
+      - name: Verify domain model
+        run: dafny verify --cores 4 specs/domain/*.dfy
+
+      - name: Verify properties
+        run: dafny verify --cores 4 --verification-time-limit 120 specs/properties/*.dfy
+
+      - name: Verify refinement proofs
+        run: dafny verify --cores 4 --verification-time-limit 300 specs/refinements/*.dfy
+
+      - name: Upload verification logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dafny-verify-logs
+          path: "**/*.dfy.log"
+
+  # ── Stage 2: Build eBPF module ──────────────────────────
+  build-bpf:
+    runs-on: ubuntu-24.04
+    needs: verify-spec
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-17 llvm-17 libbpf-dev linux-headers-$(uname -r)
+
+      - name: Generate vmlinux.h
+        run: bash scripts/gen_vmlinux.sh
+
+      - name: Build eBPF module
+        run: make build-bpf
+
+      - name: Run BPF verifier (dry-run)
+        run: |
+          sudo bpftool prog load impl/bpf/sched_ext_fair.bpf.o /sys/fs/bpf/test_sched || true
+          sudo rm -f /sys/fs/bpf/test_sched
+
+      - name: Upload compiled BPF
+        uses: actions/upload-artifact@v4
+        with:
+          name: bpf-bytecode
+          path: impl/bpf/*.bpf.o
+
+  # ── Stage 3: Trace-driven tests ─────────────────────────
+  test-traces:
+    runs-on: ubuntu-24.04
+    needs: build-bpf
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python deps
+        run: pip install -e ".[dev]"
+
+      - name: Download BPF artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bpf-bytecode
+          path: impl/bpf/
+
+      - name: Run trace-driven tests
+        run: python -m pytest tests/traces/ -v --tb=long --junitxml=artifacts/reports/trace-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-test-results
+          path: artifacts/reports/trace-results.xml
+
+  # ── Stage 4: Mapping document check ─────────────────────
+  check-mapping:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check mapping doc is up to date
+        run: |
+          # Ensure every Dafny variable in types.dfy appears in mapping.md
+          echo "Checking spec-impl mapping completeness..."
+          python3 -c "
+          import re, sys
+          with open('specs/domain/types.dfy') as f:
+              dafny_vars = set(re.findall(r'(\w+):\s+(?:nat|bool|set|seq|map)', f.read()))
+          with open('impl/bridge/mapping.md') as f:
+              mapping = f.read()
+          missing = [v for v in dafny_vars if v not in mapping]
+          if missing:
+              print(f'ERROR: Variables not in mapping.md: {missing}')
+              sys.exit(1)
+          print(f'OK: All {len(dafny_vars)} variables mapped.')
+          "

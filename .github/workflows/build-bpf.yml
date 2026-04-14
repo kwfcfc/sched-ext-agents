@@ -1,0 +1,44 @@
+name: Build BPF
+
+on:
+  pull_request:
+    paths:
+      - 'impl/bpf/**'
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        debug: [true, false]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang-17 llvm-17 libbpf-dev \
+            linux-headers-$(uname -r) bpftool
+
+      - name: Generate vmlinux.h
+        run: bash scripts/gen_vmlinux.sh
+
+      - name: Build eBPF module
+        run: |
+          cd impl/bpf
+          make ${{ matrix.debug && 'DEBUG=1' || '' }}
+
+      - name: Disassemble for inspection
+        run: |
+          llvm-objdump-17 -d impl/bpf/src/sched_ext_fair.bpf.o > bpf_disasm.txt
+          head -100 bpf_disasm.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bpf-${{ matrix.debug && 'debug' || 'release' }}
+          path: |
+            impl/bpf/src/*.bpf.o
+            bpf_disasm.txt

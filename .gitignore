@@ -1,0 +1,39 @@
+# ── Python ────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+.venv/
+
+# ── Dafny ─────────────────────────────────────────────────
+*.dfy.log
+*.dfy.expect
+.dafny/
+
+# ── Build artifacts ───────────────────────────────────────
+*.o
+*.bpf.o
+impl/generated/*
+!impl/generated/.gitkeep
+impl/bpf/headers/vmlinux.h
+
+# ── Pipeline artifacts (regenerated each run) ─────────────
+artifacts/bytecode/*
+artifacts/reports/*
+artifacts/proofs/*
+!artifacts/**/.gitkeep
+
+# ── Test outputs ──────────────────────────────────────────
+tests/fuzz/corpus/*
+!tests/fuzz/corpus/.gitkeep
+.pytest_cache/
+htmlcov/
+
+# ── Environment ───────────────────────────────────────────
+.env
+*.log
+
+# ── IDE ───────────────────────────────────────────────────
+.idea/
+*.swp
+*.swo

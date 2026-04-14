@@ -1,0 +1,10 @@
+{
+  "scheduler": "CFS (Linux 6.12)",
+  "workload": "mixed_200_tasks_8_cpus",
+  "dispatch_latency_p50_us": 2.8,
+  "dispatch_latency_p99_us": 8.5,
+  "fairness_max_divergence_ns": 3000000,
+  "overhead_percent": 1.2,
+  "throughput_dispatches_per_sec": 120000,
+  "collected_at": "2025-01-15T00:00:00Z"
+}

@@ -1,0 +1,17 @@
+{
+  "dafny.compilerPath": "/usr/local/bin/dafny",
+  "dafny.verificationTimeLimit": 120,
+  "dafny.verificationCores": 4,
+  "[dafny]": {
+    "editor.formatOnSave": true
+  },
+  "clangd.arguments": [
+    "--compile-commands-dir=impl/bpf",
+    "--header-insertion=never"
+  ],
+  "python.defaultInterpreterPath": ".venv/bin/python",
+  "files.associations": {
+    "*.bpf.c": "c",
+    "*.bpf.h": "c"
+  }
+}

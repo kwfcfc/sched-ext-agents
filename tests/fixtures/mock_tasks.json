@@ -1,0 +1,10 @@
+[
+  {"pid": 1, "vruntime": 0, "weight": 1024, "state": "Runnable", "cpu_affinity": []},
+  {"pid": 2, "vruntime": 100000, "weight": 1024, "state": "Runnable", "cpu_affinity": []},
+  {"pid": 3, "vruntime": 50000, "weight": 512, "state": "Runnable", "cpu_affinity": [0, 1]},
+  {"pid": 4, "vruntime": 200000, "weight": 128, "state": "Runnable", "cpu_affinity": [2, 3]},
+  {"pid": 5, "vruntime": 0, "weight": 1024, "state": "Blocked", "cpu_affinity": []},
+  {"pid": 6, "vruntime": 75000, "weight": 256, "state": "Runnable", "cpu_affinity": [0]},
+  {"pid": 7, "vruntime": 0, "weight": 1024, "state": "Running", "cpu_affinity": []},
+  {"pid": 8, "vruntime": 300000, "weight": 64, "state": "Runnable", "cpu_affinity": [1, 2, 3]}
+]

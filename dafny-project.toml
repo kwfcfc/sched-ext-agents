@@ -1,0 +1,9 @@
+[options]
+enforce-determinism = true
+verification-time-limit = 120
+cores = 4
+warn-shadowing = true
+warn-missing-constructor-parentheses = true
+
+[sources]
+includes = ["specs/**/*.dfy"]
