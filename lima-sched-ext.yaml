@@ -1,0 +1,42 @@
+# Lima VM for sched_ext development
+# Requires kernel 6.12+ for sched_ext support
+
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/questing/release/ubuntu-25.10-server-cloudimg-arm64.img"
+    arch: "aarch64"
+
+cpus: 4
+memory: "4GiB"
+disk: "20GiB"
+
+mounts:
+  - location: "~"
+    writable: true
+  - location: "/tmp/lima"
+    writable: true
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      apt-get update
+      apt-get install -y \
+        curl wget unzip \
+        dotnet-sdk-8.0 \
+        build-essential cmake \
+        clang llvm lld \
+        pkg-config libelf-dev \
+        libbpf-dev libseccomp-dev \
+        pahole bpftool \
+        linux-headers-generic \
+        python3 python3-pip python3-venv \
+        git make z3
+
+      # Install Dafny
+      dotnet tool install --global dafny --version 4.11.0
+      ln -sf /root/.dotnet/tools/dafny /usr/local/bin/dafny
+
+      # Clone sched-ext/scx for headers
+      git clone --depth 1 https://github.com/sched-ext/scx.git /opt/scx
